@@ -1,0 +1,38 @@
+#!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import numpy as np
+import tensorflow as tf
+def cnn(f,l,m):
+	inp=tf.reshape(f["x"], [-1, 32, 32, 3])
+	convl1 = tf.layers.conv2d(
+	inputs=inp,
+	filters=32,
+	strides=1,
+	kernel_size=[3, 3],
+	padding="same",
+	activation=tf.nn.relu)
+	p1 = tf.layers.max_pooling2d(inputs=convl1, pool_size=[2, 2], strides=2)
+	convl2= tf.layers.conv2d(
+	inputs=p1,
+	filters=64,
+	strides=1,
+	kernel_size=[3, 3],
+	padding="same",
+	activation=tf.nn.relu)
+	p2 = tf.layers.max_pooling2d(inputs=convl1, pool_size=[2, 2], strides=2)
+	convl2= tf.layers.conv2d(
+	inputs=p2,
+	filters=128,
+	strides=1,
+	kernel_size=[3, 3],
+	padding="same",
+	activation=tf.nn.relu)
+	p3 = tf.layers.max_pooling2d(inputs=convl1, pool_size=[2, 2], strides=2)
+	flat=tf.reshape(p3, [-1, 4 * 4 * 128])
+	dense = tf.layers.dense(inputs=flat, units=1024, activation=tf.nn.relu)
+	dropout = tf.layers.dropout(inputs=dense, rate=0.4, training=mode == tf.estimator.ModeKeys.TRAIN)
+	logits = tf.layers.dense(inputs=dropout, units=10)
+	tf.argmax(input=logits, axis=1)
+	tf.nn.softmax(logits, name="softmax_tensor")

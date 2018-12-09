@@ -10,9 +10,9 @@ def read(data,is_train,batch_size,sf):
 	label_bytes=1
 	image_bytes = height * width * depth
 	if is_train:
-		filenames = [os.path.join(data_dir,'data_batch_%d'%i)for i in np.arange(1,6)]
+		filenames = [os.path.join(data_dir,'data_batch_%d.bin'%i)for i in np.arange(1,6)]
 	else:
-		filenames = [os.path.join(data_dir,'test_batch')]
+		filenames = [os.path.join(data_dir,'test_batch.bin')]
 
 	filename_queue = tf.train.string_input_producer(filenames)
 
@@ -21,18 +21,14 @@ def read(data,is_train,batch_size,sf):
 	key,value=reader.read(filename_queue)
 
 	record_bytes=tf.decode_raw(value,tf.uint8)
-
 	label=tf.slice(record_bytes,[0],[label_bytes])
-	
 	label=tf.cast(label,tf.int32)
-
 	image_raw = tf.slice(record_bytes,[label_bytes],[image_bytes])
-	
 	image_raw = tf.reshape(image_raw,[depth,height,width])
-
 	image = tf.transpose(image_raw,(1,2,0))
+	image = tf.cast(image, tf.int32)
 	
-	image = tf.image.per_image_standardization(image)
+	#image = tf.image.per_image_standardization(image)
 
 	if sf:
 		images, label_batch=tf.train.shuffle_batch(
@@ -49,8 +45,9 @@ def read(data,is_train,batch_size,sf):
 						capacity=2000)
 
 	return images,tf.reshape(label_batch,[batch_size])
+
 import matplotlib.pyplot as plt
-data_dir = '/home/edgar/CE301/cifar-10-batches-py/'
+data_dir = '/home/edgar/CE301/cifar-10-batches-bin/'
 image_batch,label_batch=read(data_dir,is_train=True,batch_size=10,sf=True)
 with tf.Session() as sess:
 	i=0

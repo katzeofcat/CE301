@@ -32,18 +32,29 @@ model.add(tf.keras.layers.Conv2D(
 	activation='relu')) 
 #pooling input(64x16x16)
 model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2)))
-
+#covlnet3
+model.add(tf.keras.layers.Conv2D(
+	filters=128, 
+	kernel_size=[3,3], 
+	padding='same', 
+	activation='relu')) 
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2)))
 #FC
 model.add(tf.keras.layers.Flatten())
-model.add(tf.keras.layers.Dense(1024, activation='relu'))
+model.add(tf.keras.layers.Dense(2048, activation='relu'))
 model.add(tf.keras.layers.Dense(10, activation='softmax'))
 model.summary()
 model.compile(loss='sparse_categorical_crossentropy',
              optimizer='adam',
              metrics=['accuracy'])
+callbacks = [keras.callbacks.TensorBoard(log_dir='/home/edgar/CE301../tb')]
 model.fit(data_tr,lables_tr,
          batch_size=32,
-         epochs=1)
+         epochs=20,
+	callbacks=callbacks)
+model.save('/home/edgar/CE301../logs')
+score = model.evaluate(data_test, lables_test, verbose=0)
+print('\n', 'Test accuracy:', score[1])
 #print("x_train shape:", data_tr, "y_train shape:", lables_tr)
 #plt.imshow(data_test[30,:,:,:])
 #plt.show()

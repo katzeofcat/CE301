@@ -1,0 +1,56 @@
+#!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import os
+import os.path
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+#load data
+(data_tr,lables_tr),(data_test,lables_test)=tf.keras.datasets.cifar10.load_data()
+#normalization
+data_tr=data_tr.astype('float32')/255
+data_test=data_test.astype('float32')/255
+
+model = tf.keras.Sequential()
+#covlnet input 32x32x3
+model.add(tf.keras.layers.Conv2D(
+	filters=32, 
+	kernel_size=[3,3], 
+	padding='same', 
+	activation='relu', 
+	input_shape=(32,32,3))) 
+#pooling input(32x32x32)
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2)))
+#covlnet2 input (16x16x32)
+model.add(tf.keras.layers.Conv2D(
+	filters=64, 
+	kernel_size=[3,3], 
+	padding='same', 
+	activation='relu')) 
+#pooling input(64x16x16)
+model.add(tf.keras.layers.MaxPooling2D(pool_size=(2,2)))
+
+#FC
+model.add(tf.keras.layers.Flatten())
+model.add(tf.keras.layers.Dense(1024, activation='relu'))
+model.add(tf.keras.layers.Dense(10, activation='softmax'))
+model.summary()
+#compile and run
+model.compile(loss='sparse_categorical_crossentropy',
+             optimizer='adam',
+             metrics=['accuracy'])
+print(model.input_names)
+keras_estimator = keras.estimator.model_to_estimator(
+	keras_model=model,
+	model_dir='/home/edgar/CE301../logs')
+train_input_fn = tf.estimator.inputs.numpy_input_fn(
+	x={"conv2d_input": data_tr},
+	y=lables_tr,
+	num_epochs=1,
+	shuffle=False)
+keras_estimator.train(
+	input_fn=train_input_fn,
+	steps=20000)

@@ -1,0 +1,71 @@
+#!/usr/bin/python
+import tensorflow as tf
+import numpy as np
+import os
+
+def read(data,is_train,batch_size,sf):
+	height = 32
+	width = 32
+	depth = 3
+	label_bytes=1
+	image_bytes = height * width * depth
+	if is_train:
+		filenames = [os.path.join(data_dir,'data_batch_%d'%i)for i in np.arange(1,6)]
+	else:
+		filenames = [os.path.join(data_dir,'test_batch')]
+
+	filename_queue = tf.train.string_input_producer(filenames)
+
+	reader=tf.FixedLengthRecordReader(label_bytes+image_bytes)
+
+	key,value=reader.read(filename_queue)
+
+	record_bytes=tf.decode_raw(value,tf.uint8)
+
+	label=tf.slice(record_bytes,[0],[label_bytes])
+	
+	label=tf.cast(label,tf.int32)
+
+	image_raw = tf.slice(record_bytes,[label_bytes],[image_bytes])
+	
+	image_raw = tf.reshape(image_raw,[depth,height,width])
+
+	image = tf.transpose(image_raw,(1,2,0))
+	
+	image = tf.image.per_image_standardization(image)
+
+	if sf:
+		images, label_batch=tf.train.shuffle_batch(
+						[image,label],
+						batch_size=batch_size,
+						num_threads=16,
+						capacity=2000,
+						min_after_dequeue=1500)
+	else:
+		images,label_batch=tf.train.batch(
+						[image,label],
+						batch_size=batch_size,
+						num_threads=16,
+						capacity=2000)
+
+	return images,tf.reshape(label_batch,[batch_size])
+import matplotlib.pyplot as plt
+data_dir = '/home/edgar/CE301/cifar-10-batches-py/'
+image_batch,label_batch=read(data_dir,is_train=True,batch_size=10,sf=True)
+with tf.Session() as sess:
+	i=0
+	coord=tf.train.Coordinator()
+	threads=tf.train.start_queue_runners(coord=coord)
+	try:
+		while not coord.should_stop() and i<1:
+			img ,label = sess.run([image_batch, label_batch])
+			for j in np.arange(2):
+				print('label:%d'%label[j])
+				plt.imshow(img[j,:,:,:])
+				plt.show()
+			i+=1
+	except tf.errors.OutOfRangeError:
+		print("done")
+	finally:
+		coord.request_stop()
+	coord.join(threads)

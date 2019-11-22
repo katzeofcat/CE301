@@ -1,0 +1,77 @@
+#!/usr/bin/python
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+import os
+import os.path
+import numpy as np
+import tensorflow as tf
+from tensorflow import keras
+import matplotlib.pyplot as plt
+def freeze_session(session, keep_var_names=None, output_names=None, clear_devices=True):
+    graph = session.graph
+    with graph.as_default():
+        freeze_var_names = list(set(v.op.name for v in tf.global_variables()).difference(keep_var_names or []))
+        output_names = output_names or []
+        output_names += [v.op.name for v in tf.global_variables()]
+        input_graph_def = graph.as_graph_def()
+        if clear_devices:
+            for node in input_graph_def.node:
+                node.device = ''
+        frozen_graph = tf.graph_util.convert_variables_to_constants(
+            session, input_graph_def, output_names, freeze_var_names)
+        return frozen_graph
+#load data
+(data_tr,lables_tr),(data_test,lables_test)=tf.keras.datasets.cifar10.load_data()
+#normalization
+data_tr=data_tr.astype('float32')/255
+data_test=data_test.astype('float32')/255
+
+md = keras.Sequential([
+	#covlnet input 32x32x3
+	tf.keras.layers.Conv2D(
+		filters=32, 
+		kernel_size=[3,3], 
+		padding='same', 
+		activation='relu', 
+		input_shape=(32,32,3)),
+	#pooling input(32x32x32)
+	tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+	#covlnet2 input (16x16x32)
+	tf.keras.layers.Conv2D(
+		filters=64, 
+		kernel_size=[3,3], 
+		padding='same', 
+		activation='relu'),
+	#pooling input(64x16x16)
+	tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+	tf.keras.layers.Conv2D(
+		filters=128, 
+		kernel_size=[3,3], 
+		padding='same', 
+		activation='relu'),
+	tf.keras.layers.MaxPooling2D(pool_size=(2,2)),
+	#FC
+	tf.keras.layers.Flatten(),
+	tf.keras.layers.Dense(512, activation='relu'),
+	tf.keras.layers.Dropout(0.01),
+	tf.keras.layers.Dense(10, activation='softmax')])
+md.summary()
+md.compile(loss='sparse_categorical_crossentropy',#data is label in 0,1,2,3,4,5,6,7,8,9
+             optimizer='adam',
+             metrics=['accuracy'])
+callbacks = [keras.callbacks.TensorBoard(log_dir='/home/edgar/CE301../tb')]
+md.fit(data_tr,lables_tr,
+	batch_size=64,
+	epochs=50,
+	validation_data=(data_test, lables_test),
+	callbacks=callbacks)
+md.save('/home/edgar/CE301../md.h5')
+frozen_graph = freeze_session(tf.keras.backend.get_session(), output_names=[out.op.name for out in md.outputs])
+tf.train.write_graph(frozen_graph, '/home/edgar/CE301../', 'logs.pbtxt', as_text=True)
+tf.train.write_graph(frozen_graph, '/home/edgar/CE301../', 'logs.pb', as_text=False)
+score = md.evaluate(data_test, lables_test, batch_size=32)
+print('\n', 'Test accuracy:', score[1])
+#print("x_train shape:", data_tr, "y_train shape:", lables_tr)
+#plt.imshow(data_test[30,:,:,:])
+#plt.show()

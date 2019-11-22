@@ -1,0 +1,22 @@
+#!/usr/bin/env python
+import cv2
+import tensorflow as tf
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+CATEGORIES = ["dog","cat"]
+# to resize the image and prepare for detection
+def prepare(filepath):
+    IMG_SIZE = 32  # 50 in txt-based
+    img_array = cv2.imread(filepath, cv2.IMREAD_COLOR)
+    new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
+    return new_array.reshape(-1, IMG_SIZE, IMG_SIZE, 3)
+
+
+model = tf.keras.models.load_model("md.h5")
+prediction = model.predict([prepare('2.jpg')])
+print(prediction)
+print(CATEGORIES[int(prediction[0][0])])
+while True:
+  img=mpimg.imread('2.jpg')
+  imgplot = plt.imshow(img)
+# show the image

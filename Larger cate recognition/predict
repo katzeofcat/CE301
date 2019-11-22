@@ -1,0 +1,29 @@
+#!/usr/bin/env python
+import cv2
+import tensorflow as tf
+
+CATEGORIES = ["airplane","automobile","bird","cat","deer","dog","frog","horse","ship","truck"]
+
+
+def prepare(filepath):
+    IMG_SIZE = 32
+    img_array = cv2.imread(filepath, cv2.IMREAD_COLOR)
+    new_array = cv2.resize(img_array, (IMG_SIZE, IMG_SIZE))
+    return new_array.reshape(-1, IMG_SIZE, IMG_SIZE, 3)
+
+
+model = tf.keras.models.load_model("md.h5")
+
+prediction = model.predict(prepare('deer22.jpg'))
+for i in prediction:
+    a=i
+i=0
+while True:
+      if int(a[i])==1:
+           print("Result: ",CATEGORIES[i])
+           break
+
+      if i==10:
+           break
+      else :
+           i+=1

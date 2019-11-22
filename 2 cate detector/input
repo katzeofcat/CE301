@@ -1,0 +1,48 @@
+#!/usr/bin/python
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+import cv2
+import pickle
+#The directory of the data
+DATADIRs = "/home/edgar/test/train"
+#the categories that according to image categories.
+CATEGORIES = ["Dog", "Cat"]
+training_data = []
+x_tr=[]
+y_tr=[]
+
+def create_training_data():
+    for fl in os.listdir(DATADIRs):
+        cate= fl.split(sep='.')
+        if cate[0]=='cat':
+                class_num= 1
+                path = os.path.join(DATADIRs,fl)
+                try:
+                    img_array = cv2.imread(path ,cv2.IMREAD_COLOR)# read image
+                    new_array = cv2.resize(img_array, (32, 32))# riseze the image to 32x32
+                    training_data.append([new_array, class_num])# add the resized image data and the class label into the list.
+                except Exception as e:
+                    pass
+        if cate[0]=='dog':
+                class_num= 0
+                path = os.path.join(DATADIRs,fl)
+                try:
+                    img_array = cv2.imread(path ,cv2.IMREAD_COLOR)
+                    new_array = cv2.resize(img_array, (32, 32))
+                    training_data.append([new_array, class_num])
+                except Exception as e:
+                    pass
+create_training_data()
+np.random.shuffle(training_data)
+for img,label in training_data:
+    x_tr.append(img)
+    y_tr.append(label)
+x_tr = np.array(x_tr).reshape(-1,32,32,3)# expend the dimention.
+pickle_out = open("x_tr.pickle","wb")# write into a binary format
+pickle.dump(x_tr, pickle_out)
+pickle_out.close()
+
+pickle_out = open("y_tr.pickle","wb")
+pickle.dump(y_tr, pickle_out)
+pickle_out.close()
